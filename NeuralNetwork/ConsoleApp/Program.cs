@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using GalaxyFootball.GameEngine;
+using GalaxyFootball.RobotBrain;
 using NeuralNetwork.Helpers;
 using NeuralNetwork.NetworkModels;
 
@@ -15,6 +12,20 @@ namespace ConsoleApp
         {
             Greet();
             InitialMenu();
+        }
+
+        private static Network GetNetwork()
+        {
+            int numInputParameters = InputValues.NumberOfInputs;
+            int numOutputParameters = OutputValues.NumberOfOutputs;
+
+            // OK For shooting
+            // int[] hiddenNeurons = { 8,8 };
+
+            // OK For passing
+            int[] hiddenNeurons = { 24,8 };
+
+            return new Network(numInputParameters, hiddenNeurons, numOutputParameters);
         }
 
         private static void Greet()
@@ -29,79 +40,98 @@ namespace ConsoleApp
         {
             Console.WriteLine("Main Menu");
             PrintUnderline(50);
-            Console.WriteLine("\t1. Create training data");
-            Console.WriteLine("\t2. Import Network");
-            Console.WriteLine("\t3. Exit");
+            Console.WriteLine("1. Shooting training");
+            Console.WriteLine("2. Passing training");
+            Console.WriteLine("3. Defend training");
+            Console.WriteLine("7. Create team");
+            Console.WriteLine("8. Game");
+            Console.WriteLine("9. Exit");
             PrintNewLine();
 
-            switch (GetInput("\tYour Choice: ", 1, 3))
+            switch (GetInput("Your Choice: ", 1, 9))
             {
                 case 1:
-                    CreateTrainingData();
+                    ShootingTraining();
                     break;
                 case 2:
+                    LongPassTraining();
                     break;
                 case 3:
+                    DefendTraining();
+                    break;
+                case 7:
+                    CreateTeam();
+                    break;
+                case 8:
+                    RunGame();
+                    break;
+                case 9:
                     Exit();
                     break;
             }
         }
 
-        private static void CreateTrainingData()
-        {
-            PrintNewLine();
-            Console.WriteLine("Create Training Data");
-            PrintUnderline(50);
-            Console.WriteLine("\t1. Create shooting data");
-            Console.WriteLine("\t2. Train to max epoch");
-            Console.WriteLine("\t3. Network Menu");
-            PrintNewLine();
 
-            switch (GetInput("\tYour Choice: ", 1, 3))
-            {
-                case 1:
-                    CreateShootingDataSet();
-                    break;
-            }
-            PrintNewLine();
+        private static void ShootingTraining()
+        {
+            string datasetfile = "ShootingTrainingDataSet.txt";
+            string networkfile = "Player_shooting.txt";
+
+            int dataset_size = 2000;
+            bool verbose = false;
+
+            // A player close to the opponent goal, should shot at goal
+            var shooting = DataSetFactory.GetCreator(DataSetFactory.Simulation.Shooting);
+            shooting.EnableLogging = verbose;
+
+            var dataset = shooting.GetDataSet(dataset_size);
+            dataset.Save(datasetfile);
+
+            var network = TrainNetwork(datasetfile, networkfile, verbose);
+
+            float result = shooting.Validate(network, 1000);
         }
 
-        private static void CreateShootingDataSet()
+        private static void LongPassTraining()
         {
-            var scene = new FieldScene();
+            string datasetfile = "LongPassTrainingDataSet.txt";
+            string networkfile = "Player_longpass.txt";
 
-            // scene.Print();
+            int dataset_size = 4000;
+            bool verbose = false;
 
-            int iterations = 100;
-            var dataset = new GalaxySoccerRobotDataset();
+            // A player on the field could perform a long pass if he is far from the opponent goal
+            var longpass = DataSetFactory.GetCreator(DataSetFactory.Simulation.LongPass);
+            longpass.EnableLogging = verbose;
 
-            Console.WriteLine("\tSimulation shooting situations...");
-            int shoot_count = 0;
-            for (int i=0; i< iterations; i++)
-            {
-                scene.BallNearOpponentGoal();
-                scene.PlayerNearOpponentGoal();
+            var dataset = longpass.GetDataSet(dataset_size);
+            dataset.Save(datasetfile);
 
-                scene.OpponentsRandom();
-                scene.TeamsmatesRandom();
+            TrainNetwork(datasetfile, networkfile, verbose);
+            var network = ImportHelper.ImportNetwork(networkfile);
 
-                double distane_ball_player = scene.GetDistanceBetweenBallAndPlayer();
-                double distane_ball_goal   = scene.GetDistanceBetweenBallAndOpponentGoal();
+            float result = longpass.Validate(network, 1000);
+        }
 
-                bool shoot = distane_ball_player < 0.3 && distane_ball_goal < 0.3;
-                if (shoot) shoot_count++;
+        private static void DefendTraining()
+        {
+            string datasetfile = "DefendTrainingDataSet.txt";
+            string networkfile = "Player_defend.txt";
 
-                var input  = new InputValues(scene);
-                var output = OutputValues.Shoot(shoot);
+            int dataset_size = 2000;
+            bool verbose = false;
 
-                dataset.Add(input, output);
-            }
-            Console.WriteLine("\tNumber of shoots: {0} ({1}%)", shoot_count, 100*shoot_count/(double)iterations);
-            Console.WriteLine("\t**Simulation Complete!**");
+            // A player on the field could perform a long pass if he is far from the opponent goal
+            var simulation = DataSetFactory.GetCreator(DataSetFactory.Simulation.Defend);
+            simulation.EnableLogging = verbose;
 
-            Console.WriteLine("\tExporting Datasets...");
-            dataset.Save("ShootingTraining.txt");
-            Console.WriteLine("\t**Exporting Complete!**");
+            var dataset = simulation.GetDataSet(dataset_size);
+            dataset.Save(datasetfile);
+
+            TrainNetwork(datasetfile, networkfile, verbose);
+            var network = ImportHelper.ImportNetwork(networkfile);
+
+            float result = simulation.Validate(network, 1000);
         }
 
         private static void PrintUnderline(int numUnderlines)
@@ -154,44 +184,89 @@ namespace ConsoleApp
             return int.TryParse(line, out num) ? num : 0;
         }
 
-        private static void Train(string dataset_filename)
+        private static Network TrainNetwork(string dataset_filename, string network_filename, bool verbose)
         {
-            Console.WriteLine("Network Training");
-            PrintUnderline(50);
-            Console.WriteLine("\t1. Train to minimum error");
-            Console.WriteLine("\t2. Train to max epoch");
-            Console.WriteLine("\t3. Network Menu");
+            var dataset = new RobotDataset();
+            dataset.Load(dataset_filename);
+            dataset.CreateTestData(0.2);
+
+            var traindata = dataset.GetTrainData();
+            var testdata = dataset.GetTestData();
+
+            Console.WriteLine("Training set size: {0}", traindata.Count);
+            Console.WriteLine("Test set size:     {0}", testdata.Count);
+
+            var network = GetNetwork();
+            network.EnableLogging = verbose;
+
+            float minError = 0.05f;
+            int maxEpoch   = 100;
+
+            Console.WriteLine("Training...");
+            network.LearnRate = 0.4;
+            network.Train(dataset.GetTrainData(), dataset.GetTestData(), minError, maxEpoch);
+            Console.WriteLine("Epoch:{0} TrainError:{1} TestError:{2}",
+                                network.Epochs, network.TrainingsError, network.TestError);
+            Console.WriteLine("**Training Complete**");
+            ExportHelper.ExportNetwork(network, network_filename);
             PrintNewLine();
-            switch (GetInput("\tYour Choice: ", 1, 3))
+
+            return network;
+        }
+
+        private static void PrintInputValues(InputValues input)
+        {
+            for (int i = 0; i < InputValues.NumberOfInputs; i++)
             {
-                case 1:
-                    var minError = GetDouble("\tMinimum Error: ", 0.000000001, 1.0);
-                    PrintNewLine();
-                    Console.WriteLine("\tTraining...");
-                    _network.Train(_dataSets, minError);
-                    Console.WriteLine("\t**Training Complete**");
-                    PrintNewLine();
-                    NetworkMenu();
-                    break;
-                case 2:
-                    var maxEpoch = GetInput("\tMax Epoch: ", 1, int.MaxValue);
-                    if (!maxEpoch.HasValue)
-                    {
-                        PrintNewLine();
-                        NetworkMenu();
-                        return;
-                    }
-                    PrintNewLine();
-                    Console.WriteLine("\tTraining...");
-                    _network.Train(_dataSets, maxEpoch.Value);
-                    Console.WriteLine("\t**Training Complete**");
-                    PrintNewLine();
-                    break;
-                case 3:
-                    NetworkMenu();
-                    break;
+                Console.WriteLine("{0}:{1}", i, input.GetValues()[i]);
             }
-            PrintNewLine();
+        }
+
+        private static void PrintOutputValues(OutputValues output)
+        {
+            for(int i=0; i<OutputValues.NumberOfOutputs; i++)
+            {
+                Console.WriteLine("{0}:{1}", i, output.GetValues()[i]);
+            }
+        }
+
+        private static void PrintOutputValuesResults(double[] results)
+        {
+            double max_value = 0;
+            int max_category = -1;
+
+            for (int i = 0; i < OutputValues.NumberOfOutputs; i++)
+            {
+                if (results[i]>max_value)
+                {
+                    max_value = results[i];
+                    max_category = i;
+                }
+            }
+            for (int i = 0; i < OutputValues.NumberOfOutputs; i++)
+            {
+                Console.WriteLine("{0}:{1} {2}", i, results[i], (max_category == i ? "*" : ""));
+            }
+        }
+
+        private static void CreateTeam()
+        {
+
+        }
+
+        private static void RunGame()
+        {
+            var team1 = new LineUp();
+            var team2 = new LineUp();
+
+            var game = new GameRunner(team1, team2, GameRules.League);
+
+            game.OnLogMessage += (string msg) => { Console.WriteLine(msg); };
+
+            while ( game.Step() )
+            {
+                
+            }
         }
 
     }

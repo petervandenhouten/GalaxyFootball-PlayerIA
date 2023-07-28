@@ -1,25 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using System.IO;
 using System.Linq;
 using NeuralNetwork.NetworkModels;
 using Newtonsoft.Json;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace NeuralNetwork.Helpers
 {
 	public static class ImportHelper
 	{
-        public static Network ImportNetwork()
-		{
-			var dn = GetHelperNetwork();
-			if (dn == null) return null;
-
-			return ImportNetwork(dn);
-
-		}
-
         public static Network ImportNetwork(HelperNetwork dn)
 		{
             var network = new Network();
@@ -107,31 +96,6 @@ namespace NeuralNetwork.Helpers
             return ImportNetwork(dn);
         }
 
-        public static List<DataSet> ImportDatasets()
-		{
-			try
-			{
-				var dialog = new OpenFileDialog
-				{
-					Multiselect = false,
-					Title = "Open Dataset File",
-					Filter = "Text File|*.txt;"
-				};
-
-				using (dialog)
-				{
-					if (dialog.ShowDialog() != DialogResult.OK) return null;
-					using (var file = File.OpenText(dialog.FileName))
-					{
-						return JsonConvert.DeserializeObject<List<DataSet>>(file.ReadToEnd());
-					}
-				}
-			}
-			catch (Exception)
-			{
-				return null;
-			}
-		}
         public static List<DataSet> ImportDatasets(string filename)
 		{
 			if (File.Exists(filename))
@@ -151,27 +115,5 @@ namespace NeuralNetwork.Helpers
                 return JsonConvert.DeserializeObject<HelperNetwork>(file.ReadToEnd());
             }
         }
-        private static HelperNetwork GetHelperNetwork()
-		{
-			try
-			{
-				var dialog = new OpenFileDialog
-				{
-					Multiselect = false,
-					Title = "Open Network File",
-					Filter = "Text File|*.txt;"
-				};
-
-				using (dialog)
-				{
-					if (dialog.ShowDialog() != DialogResult.OK) return null;
-					return GetHelperNetwork(dialog.FileName);
-                }
-			}
-			catch (Exception)
-			{
-				return null;
-			}
-		}
 	}
 }

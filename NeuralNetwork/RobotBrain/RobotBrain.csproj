@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7488B34B-6516-4306-95F0-5A49E1425701}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>ConsoleApp</RootNamespace>
-    <AssemblyName>ConsoleApp</AssemblyName>
+    <ProjectGuid>{97D95F0B-C51A-476A-A663-CC139CF23A32}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GalaxyFootball.RobotBrain</RootNamespace>
+    <AssemblyName>RobotBrain</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -24,7 +23,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -33,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -43,22 +44,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsciiCanvas.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="DataSetCreator\Creator.cs" />
+    <Compile Include="DataSetCreator\CreatorBase.cs" />
+    <Compile Include="DataSetCreator\Defend.cs" />
+    <Compile Include="DataSetCreator\LongPass.cs" />
+    <Compile Include="DataSetCreator\Shooting.cs" />
+    <Compile Include="FieldScene.cs" />
+    <Compile Include="Brain.cs" />
+    <Compile Include="RobotDataset.cs" />
+    <Compile Include="Helpers\ExportHelper.cs" />
+    <Compile Include="Helpers\HelperNetwork.cs" />
+    <Compile Include="Helpers\ImportHelper.cs" />
+    <Compile Include="NetworkModels\Dataset.cs" />
+    <Compile Include="NetworkModels\Network.cs" />
+    <Compile Include="NetworkModels\Neuron.cs" />
+    <Compile Include="NetworkModels\Sigmoid.cs" />
+    <Compile Include="NetworkModels\Synapse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="DataSetFactory.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\GameEngine\GameEngine.csproj">
-      <Project>{b0a8d465-950d-4b31-bb86-7b1b49973b19}</Project>
-      <Name>GameEngine</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RobotBrain\RobotBrain.csproj">
-      <Project>{97d95f0b-c51a-476a-a663-cc139cf23a32}</Project>
-      <Name>RobotBrain</Name>
-    </ProjectReference>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

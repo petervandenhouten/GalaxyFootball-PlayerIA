@@ -116,7 +116,29 @@ namespace NeuralNetwork.NetworkModels
             }
 		}
 
-		private void ForwardPropagate(params double[] inputs)
+        public void Train(List<DataSet> dataSets, List<DataSet> testSets, double minimumError, int maxEpochs)
+        {
+            TrainingsError = 1.0;
+            var numEpochs = 0;
+
+            while (TrainingsError > minimumError && numEpochs < maxEpochs)
+            {
+                var errors = new List<double>();
+                foreach (var dataSet in dataSets)
+                {
+                    ForwardPropagate(dataSet.Values);
+                    BackPropagate(dataSet.Targets);
+                    errors.Add(CalculateError(dataSet.Targets));
+                }
+                TrainingsError = errors.Average();
+                TestError = testSets != null ? Test(testSets) : -1;
+                LogMessage("Epoch:{0} TrainError:{1} TestError:{2}", numEpochs, TrainingsError, TestError);
+                numEpochs++;
+                Epochs = numEpochs;
+            }
+        }
+
+        private void ForwardPropagate(params double[] inputs)
 		{
 			var i = 0;
 			InputLayer.ForEach(a => a.Value = inputs[i++]);

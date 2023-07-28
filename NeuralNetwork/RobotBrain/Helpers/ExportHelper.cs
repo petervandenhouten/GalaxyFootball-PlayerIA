@@ -1,28 +1,12 @@
 ﻿using System.IO;
-using System.Windows.Forms;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using NeuralNetwork.NetworkModels;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace NeuralNetwork.Helpers
 {
     public static class ExportHelper
     {
-		public static void ExportNetwork(Network network)
-		{
-			var dialog = new SaveFileDialog
-			{
-				Title = "Save Network File",
-				Filter = "Text File|*.txt;"
-			};
-
-			using (dialog)
-			{
-				if (dialog.ShowDialog() != DialogResult.OK) return;
-				ExportNetwork(network, dialog.FileName);
-			}
-		}
         public static void ExportNetwork(Network network, string filename)
 		{
             var dn = GetHelperNetwork(network);
@@ -34,20 +18,6 @@ namespace NeuralNetwork.Helpers
             }
         }
 
-        public static void ExportDatasets(List<DataSet> datasets)
-		{
-            var dialog = new SaveFileDialog
-            {
-                Title = "Save Dataset File",
-                Filter = "Text File|*.txt;"
-            };
-
-            using (dialog)
-            {
-                if (dialog.ShowDialog() != DialogResult.OK) return;
-				ExportDatasets(datasets, dialog.FileName);
-            }
-        }
         public static void ExportDatasets(List<DataSet> datasets, string filename)
 		{
             using (var file = File.CreateText(filename))
